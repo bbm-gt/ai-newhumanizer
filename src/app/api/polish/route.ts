@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
-import { checkAndIncrementUsage, getRateLimitHeaders, Env } from '@/lib/rateLimit';
+import { checkAndIncrementUsage, getRateLimitHeaders } from '@/lib/rateLimit';
 
 // Anti-AI Detection Polish System Prompt
 const POLISH_SYSTEM_PROMPT = `You are a professional content refiner that makes AI-generated text sound more human and natural.
@@ -164,7 +164,6 @@ export async function POST(request: NextRequest) {
           });
 
           if (!response.ok) {
-            const errorText = await response.text();
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'AI service error' })}\n\n`));
             controller.close();
             return;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Turnstile from '@/components/Turnstile';
 
@@ -10,7 +10,7 @@ const AIDetectionRadarChart = dynamic(
 );
 
 interface CheckResult {
-  humanScore: number;
+  aiProbability: number;
   lexical: number;
   structural: number;
   tone: number;
@@ -63,8 +63,7 @@ export default function BypassAICheck() {
       setResult(data);
       setShowResults(true);
 
-      // Show warning if humanScore < 40
-      if (data.humanScore < 40) {
+      if (data.aiProbability > 60) {
         setShowBanner(true);
         setShowModal(true);
       }
@@ -79,42 +78,52 @@ export default function BypassAICheck() {
     window.open(affiliateLink, '_blank');
   };
 
+  const getProbabilityColor = (prob: number) => {
+    if (prob >= 70) return 'text-red-600 dark:text-red-400';
+    if (prob >= 40) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-green-600 dark:text-green-400';
+  };
+
+  const getProbabilityLabel = (prob: number) => {
+    if (prob >= 70) return 'High AI Probability';
+    if (prob >= 40) return 'Moderate AI Probability';
+    return 'Low AI Probability';
+  };
+
   return (
     <main className="min-h-screen bg-white dark:bg-black text-black dark:text-white pb-safe flex flex-col items-center justify-center p-6 gap-8 transition-all duration-300">
-      {/* Warning Banner */}
       {showBanner && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white py-3 px-6 text-center text-sm font-medium shadow-lg">
-          ⚠️ Warning: Strict AI patterns detected. Free refinement may not bypass strict detectors.
+          Warning: High AI probability detected. Consider using Humanizer Pro for better results.
         </div>
       )}
 
-      {/* Modal */}
-      {showModal && result && result.humanScore < 40 && (
+      {showModal && result && result.aiProbability > 60 && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}
         >
           <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
             <div className="text-center space-y-6">
-              <div className="text-5xl">🚨</div>
-              <h2 className="text-2xl font-bold text-red-600 dark:text-red-400">AI Detection Alert</h2>
+              <div className="text-5xl">⚠️</div>
+              <h2 className="text-2xl font-bold text-red-600 dark:text-red-400">High AI Probability Detected</h2>
               <p className="text-gray-600 dark:text-gray-300">
-                Warning: Strict AI patterns detected. Your text has only <span className="font-bold text-red-600">{result.humanScore}%</span> human score.
+                Your text has a <span className="font-bold text-red-600">{result.aiProbability}%</span> AI probability score.
               </p>
               <p className="text-sm text-gray-500">
-                Free refinement tools may not be enough to bypass Turnitin and other strict detectors.
+                Use Humanizer Pro to humanize your content and bypass strict AI detectors like Turnitin.
               </p>
               <button
                 onClick={openAffiliateLink}
                 className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-full font-bold text-lg hover:opacity-90 transition-opacity"
               >
-                Unlock Pro Engine (100% Bypass)
+                Try Humanizer Pro - 100% Bypass
               </button>
               <button
                 onClick={() => setShowModal(false)}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm"
               >
-                Continue with free version
+                Continue anyway
               </button>
             </div>
           </div>
@@ -124,7 +133,7 @@ export default function BypassAICheck() {
       <div className="w-full max-w-3xl flex flex-col gap-6 flex-1 pt-12 md:pt-24 pb-24">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-semibold tracking-tight">AI Content Detector</h1>
-          <p className="text-gray-500 dark:text-gray-400">Paste your text below to check for AI generation.</p>
+          <p className="text-gray-500 dark:text-gray-400">Paste your text below to detect AI generation.</p>
         </div>
 
         <div className="relative w-full">
@@ -140,7 +149,6 @@ export default function BypassAICheck() {
           </div>
         </div>
 
-        {/* Turnstile widget - shown when text > 300 chars and no token */}
         {text.length > 300 && !turnstileToken && turnstileSiteKey && (
           <div className="flex justify-center">
             <Turnstile siteKey={turnstileSiteKey} onVerify={handleVerify} />
@@ -163,24 +171,26 @@ export default function BypassAICheck() {
           )}
         </button>
 
-        {/* Results Dashboard */}
         {showResults && result && (
           <div className="overflow-hidden transition-all duration-500 ease-in-out max-h-[1000px] opacity-100 mt-8">
             <div className="p-8 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-sm flex flex-col gap-8 bg-white/50 dark:bg-black/50 backdrop-blur-sm">
-              {/* Human Score */}
               <div className="flex flex-col items-center justify-center gap-4">
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Human Score</h3>
+                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">AI Probability</h3>
                 <div className="relative w-48 h-24 overflow-hidden flex items-end justify-center">
                   <div className="absolute top-0 left-0 w-48 h-48 rounded-full border-[16px] border-gray-100 dark:border-gray-900 border-b-transparent border-r-transparent rotate-45 transition-all duration-1000" />
                   <div
-                    className="absolute top-0 left-0 w-48 h-48 rounded-full border-[16px] border-black dark:border-white border-b-transparent border-r-transparent -rotate-45 transition-all duration-1000"
-                    style={{ transform: `rotate(${-135 + (result.humanScore * 2.7)}deg)` }}
+                    className={`absolute top-0 left-0 w-48 h-48 rounded-full border-[16px] ${getProbabilityColor(result.aiProbability).replace('text-', 'border-')} border-b-transparent border-r-transparent -rotate-45 transition-all duration-1000`}
+                    style={{ transform: `rotate(${-135 + (result.aiProbability * 2.7)}deg)` }}
                   />
-                  <span className="text-4xl font-bold mb-2">{result.humanScore}%</span>
+                  <span className={`text-4xl font-bold mb-2 ${getProbabilityColor(result.aiProbability)}`}>
+                    {result.aiProbability}%
+                  </span>
                 </div>
+                <span className={`text-sm font-medium ${getProbabilityColor(result.aiProbability)}`}>
+                  {getProbabilityLabel(result.aiProbability)}
+                </span>
               </div>
 
-              {/* Six Dimensional Radar Chart */}
               <AIDetectionRadarChart
                 lexical={result.lexical}
                 structural={result.structural}
@@ -190,7 +200,6 @@ export default function BypassAICheck() {
                 punctuation={result.punctuation}
               />
 
-              {/* Six Dimensions Labels */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
                 <DimensionLabel label="Lexical" value={result.lexical} />
                 <DimensionLabel label="Structural" value={result.structural} />

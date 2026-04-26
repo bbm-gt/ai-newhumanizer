@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface TurnstileProps {
   siteKey: string;
@@ -10,10 +10,11 @@ interface TurnstileProps {
 
 export default function Turnstile({ siteKey, onVerify, theme = 'auto' }: TurnstileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     if (!siteKey) return;
+
+    const container = containerRef.current;
 
     // Load Turnstile script
     const script = document.createElement('script');
@@ -21,8 +22,8 @@ export default function Turnstile({ siteKey, onVerify, theme = 'auto' }: Turnsti
     script.async = true;
 
     script.onload = () => {
-      if (containerRef.current && window.turnstile) {
-        window.turnstile.render(containerRef.current, {
+      if (container && window.turnstile) {
+        window.turnstile.render(container, {
           sitekey: siteKey,
           callback: onVerify,
           theme: theme,
@@ -33,16 +34,15 @@ export default function Turnstile({ siteKey, onVerify, theme = 'auto' }: Turnsti
             console.warn('Turnstile token expired');
           }
         });
-        setIsLoaded(true);
       }
     };
 
     document.body.appendChild(script);
 
     return () => {
-      if (containerRef.current && window.turnstile) {
+      if (container && window.turnstile) {
         try {
-          window.turnstile.remove(containerRef.current);
+          window.turnstile.remove(container);
         } catch {
           // Ignore cleanup errors
         }

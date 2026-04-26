@@ -9,8 +9,11 @@ export default function DevToggle() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      setIsLocalhost(true);
+    if (typeof window !== 'undefined') {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsLocalhost(true);
+      }
     }
   }, []);
 
