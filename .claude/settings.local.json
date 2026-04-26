@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "WebFetch(domain:ai-newhumanizer.pages.dev)",
+      "WebFetch(domain:bypassaicheck.com)",
+      "WebFetch(domain:draftpolish.com)",
+      "WebSearch",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(curl *)",
+      "WebFetch(domain:detect.ilang.cn)",
+      "Bash(git restore *)"
+    ]
+  }
+}

@@ -63,7 +63,7 @@ export default function BypassAICheck() {
       setResult(data);
       setShowResults(true);
 
-      if (data.aiProbability > 60) {
+      if (data.aiProbability > 50) {
         setShowBanner(true);
         setShowModal(true);
       }
@@ -98,7 +98,7 @@ export default function BypassAICheck() {
         </div>
       )}
 
-      {showModal && result && result.aiProbability > 60 && (
+      {showModal && result && result.aiProbability > 50 && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}

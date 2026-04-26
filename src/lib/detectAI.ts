@@ -178,12 +178,12 @@ export function detectAI(text: string): DetectionResult {
   const punctuation = detectPunctuation(text);
   const logic = detectLogic(text);
 
-  const lexicalWeight = 0.25;
-  const structuralWeight = 0.25;
+  const lexicalWeight = 0.35;
+  const structuralWeight = 0.30;
   const rhythmWeight = 0.15;
-  const toneWeight = 0.10;
-  const punctuationWeight = 0.10;
-  const logicWeight = 0.15;
+  const toneWeight = 0.08;
+  const punctuationWeight = 0.07;
+  const logicWeight = 0.05;
 
   const weightedSum =
     lexical.score * lexicalWeight +
