@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
-    if (text.length > 300) {
+    if (text.length > 500) {
       if (!turnstileToken) {
         return NextResponse.json(
           { error: 'Turnstile verification required for long text' },

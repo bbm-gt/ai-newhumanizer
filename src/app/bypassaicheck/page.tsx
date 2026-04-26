@@ -31,7 +31,7 @@ export default function BypassAICheck() {
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
   const affiliateLink = process.env.NEXT_PUBLIC_AFFILIATE_LINK || '#';
-  const needsTurnstile = Boolean(turnstileSiteKey) && text.length > 300;
+  const needsTurnstile = Boolean(turnstileSiteKey) && text.length > 500;
   const needsToken = needsTurnstile && !turnstileToken;
 
   const handleVerify = (token: string) => {

@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Turnstile verification for text > 300 characters
-    if (text.length > 300) {
+    if (text.length > 500) {
       if (!turnstileToken) {
         return NextResponse.json(
           { error: 'Turnstile verification required for long text' },
