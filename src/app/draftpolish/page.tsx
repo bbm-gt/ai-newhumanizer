@@ -154,6 +154,7 @@ export default function DraftPolish() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Write or paste your original draft here..."
+              maxLength={500}
               className="flex-1 w-full p-6 bg-transparent border border-gray-200 dark:border-gray-800 rounded-3xl resize-none focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all duration-300 text-lg shadow-sm"
             />
           </div>

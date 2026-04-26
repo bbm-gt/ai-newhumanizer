@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Turnstile from '@/components/Turnstile';
+
+const AIDetectionRadarChart = dynamic(
+  () => import('@/components/AIDetectionRadarChart'),
+  { ssr: false, loading: () => <div className="h-[350px] flex items-center justify-center text-gray-400">Loading chart...</div> }
+);
 
 interface CheckResult {
   humanScore: number;
@@ -126,10 +132,11 @@ export default function BypassAICheck() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Enter your text here..."
+            maxLength={500}
             className="w-full min-h-[60vh] p-6 bg-transparent border border-gray-200 dark:border-gray-800 rounded-2xl resize-none focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all duration-300 text-lg shadow-sm"
           />
           <div className="absolute bottom-4 right-6 text-sm text-gray-400 font-mono">
-            {text.length}/2000
+            {text.length}/500
           </div>
         </div>
 
@@ -173,14 +180,24 @@ export default function BypassAICheck() {
                 </div>
               </div>
 
-              {/* Six Dimensions */}
-              <div className="space-y-6">
-                <Dimension label="Lexical Fingerprint" value={result.lexical} />
-                <Dimension label="Structural Pattern" value={result.structural} />
-                <Dimension label="Tone Consistency" value={result.tone} />
-                <Dimension label="Logic Flow" value={result.logic} />
-                <Dimension label="Rhythm Variation" value={result.rhythm} />
-                <Dimension label="Punctuation Style" value={result.punctuation} />
+              {/* Six Dimensional Radar Chart */}
+              <AIDetectionRadarChart
+                lexical={result.lexical}
+                structural={result.structural}
+                tone={result.tone}
+                logic={result.logic}
+                rhythm={result.rhythm}
+                punctuation={result.punctuation}
+              />
+
+              {/* Six Dimensions Labels */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
+                <DimensionLabel label="Lexical" value={result.lexical} />
+                <DimensionLabel label="Structural" value={result.structural} />
+                <DimensionLabel label="Tone" value={result.tone} />
+                <DimensionLabel label="Logic" value={result.logic} />
+                <DimensionLabel label="Rhythm" value={result.rhythm} />
+                <DimensionLabel label="Punctuation" value={result.punctuation} />
               </div>
             </div>
           </div>
@@ -190,19 +207,11 @@ export default function BypassAICheck() {
   );
 }
 
-function Dimension({ label, value }: { label: string; value: number }) {
+function DimensionLabel({ label, value }: { label: string; value: number }) {
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-sm">
-        <span className="font-medium">{label}</span>
-        <span className="text-gray-500">{value}%</span>
-      </div>
-      <div className="w-full h-2 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-black dark:bg-white rounded-full transition-all duration-1000"
-          style={{ width: `${value}%` }}
-        />
-      </div>
+    <div className="flex flex-col items-center gap-1">
+      <span className="text-xs text-gray-500 uppercase tracking-wider">{label}</span>
+      <span className="text-lg font-semibold">{value}%</span>
     </div>
   );
 }

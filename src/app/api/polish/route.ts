@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
-// TODO: 需在 Cloudflare Dashboard 中配置 WAF Rate Limiting 规则，限制 /api 每分钟 5 次请求
+import { checkAndIncrementUsage, getRateLimitHeaders, Env } from '@/lib/rateLimit';
 
 // Anti-AI Detection Polish System Prompt
 const POLISH_SYSTEM_PROMPT = `You are a professional content refiner that makes AI-generated text sound more human and natural.
@@ -46,9 +46,34 @@ const MODE_PROMPTS = {
   Creative: "Refine this text with more expressive, varied language while keeping the core message clear."
 };
 
-// Turnstile verification (placeholder)
-async function verifyTurnstile(token: string): Promise<boolean> {
-  return token ? true : false;
+interface TurnstileResponse {
+  success: boolean;
+  'error-codes'?: string[];
+}
+
+async function verifyTurnstile(token: string, ip?: string): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) {
+    console.error('TURNSTILE_SECRET_KEY is not configured');
+    return false;
+  }
+
+  try {
+    const result = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: new URLSearchParams({
+        secret,
+        response: token,
+        remoteip: ip || '',
+      }),
+    });
+
+    const data = (await result.json()) as TurnstileResponse;
+    return data.success;
+  } catch (error) {
+    console.error('Turnstile verification error:', error);
+    return false;
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -63,6 +88,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 500 character limit
+    if (text.length > 500) {
+      return NextResponse.json(
+        { error: 'Text exceeds 500 character limit' },
+        { status: 400 }
+      );
+    }
+
+    // Rate limiting
+    const { result: rateLimitResult, setCookie } = await checkAndIncrementUsage(request);
+
+    if (!rateLimitResult.allowed) {
+      const response = NextResponse.json(
+        { error: 'Daily limit reached. Please try again tomorrow.', remaining: 0 },
+        { status: 429 }
+      );
+      const headers = getRateLimitHeaders(setCookie);
+      headers.forEach((value, key) => {
+        if (key === 'Set-Cookie') {
+          response.headers.set(key, value);
+        }
+      });
+      return response;
+    }
+
     // Turnstile verification for text > 300 characters
     if (text.length > 300) {
       if (!turnstileToken) {
@@ -71,7 +121,7 @@ export async function POST(request: NextRequest) {
           { status: 403 }
         );
       }
-      const isValid = await verifyTurnstile(turnstileToken);
+      const isValid = await verifyTurnstile(turnstileToken, request.headers.get('cf-connecting-ip') || undefined);
       if (!isValid) {
         return NextResponse.json(
           { error: 'Turnstile verification failed' },
@@ -79,9 +129,6 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-
-    // IP rate limiting placeholder
-    // In production, implement IP-based rate limiting or use Cloudflare WAF rules
 
     const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
