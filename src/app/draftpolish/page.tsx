@@ -14,6 +14,7 @@ export default function DraftPolish() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
+  const exceedsLimit = text.length > 600;
 
   const handleVerify = (token: string) => {
     setTurnstileToken(token);
@@ -182,15 +183,15 @@ export default function DraftPolish() {
           )}
 
           {/* Reminder when text exceeds 600 chars */}
-          {text.length > 600 && (
-            <div className="text-amber-500 text-sm text-center">
-              ⚠️ Text exceeds 600 characters
+          {exceedsLimit && (
+            <div className="text-red-500 text-sm text-center">
+              ⚠️ Text exceeds 600 limit.
             </div>
           )}
 
           <button
             onClick={handlePolish}
-            disabled={isPolishing || !text.trim()}
+            disabled={isPolishing || !text.trim() || exceedsLimit}
             className="w-full sm:w-auto bg-black dark:bg-white text-white dark:text-black px-8 py-4 rounded-full font-medium shadow-sm hover:shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isPolishing ? (

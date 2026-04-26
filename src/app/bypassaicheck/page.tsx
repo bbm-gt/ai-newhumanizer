@@ -33,7 +33,7 @@ export default function BypassAICheck() {
   const affiliateLink = process.env.NEXT_PUBLIC_AFFILIATE_LINK || '#';
   const needsTurnstile = Boolean(turnstileSiteKey) && text.length > 300;
   const needsToken = needsTurnstile && !turnstileToken;
-  const showReminder = text.length > 600;
+  const exceedsLimit = text.length > 600;
 
   const handleVerify = (token: string) => {
     setTurnstileToken(token);
@@ -149,9 +149,9 @@ export default function BypassAICheck() {
           </div>
         </div>
 
-        {showReminder && (
-          <div className="text-amber-500 text-sm text-center">
-            ⚠️ Text exceeds 600 characters - verification required
+        {exceedsLimit && (
+          <div className="text-red-500 text-sm text-center">
+            ⚠️ Text exceeds 600 limit.
           </div>
         )}
 
@@ -167,7 +167,7 @@ export default function BypassAICheck() {
 
         <button
           onClick={handleCheck}
-          disabled={isLoading || needsToken}
+          disabled={isLoading || needsToken || exceedsLimit}
           className="w-full md:w-auto md:self-end bg-black text-white dark:bg-white dark:text-black px-8 py-4 rounded-full font-medium shadow-sm hover:shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isLoading ? (
