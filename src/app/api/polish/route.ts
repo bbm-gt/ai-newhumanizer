@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
           { status: 403 }
         );
       }
-      const isValid = await verifyTurnstile(turnstileToken, request.headers.get('cf-connecting-ip') || undefined);
+      const isValid = await verifyTurnstile(turnstileToken, request.headers.get('CF-Connecting-IP') || undefined);
       if (!isValid) {
         return NextResponse.json(
           { error: 'Turnstile verification failed' },

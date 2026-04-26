@@ -15,6 +15,14 @@ export default function DraftPolish() {
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
   const exceedsLimit = text.length > 600;
+  const needsTurnstile = text.length > 300;
+
+  // Reset token when text changes significantly or clears
+  useEffect(() => {
+    if (text.length <= 300 && turnstileToken) {
+      setTurnstileToken('');
+    }
+  }, [text.length]);
 
   const handleVerify = (token: string) => {
     setTurnstileToken(token);
@@ -191,7 +199,7 @@ export default function DraftPolish() {
 
           <button
             onClick={handlePolish}
-            disabled={isPolishing || !text.trim() || exceedsLimit}
+            disabled={isPolishing || !text.trim() || exceedsLimit || (needsTurnstile && !turnstileToken)}
             className="w-full sm:w-auto bg-black dark:bg-white text-white dark:text-black px-8 py-4 rounded-full font-medium shadow-sm hover:shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isPolishing ? (
