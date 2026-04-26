@@ -31,8 +31,9 @@ export default function BypassAICheck() {
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
   const affiliateLink = process.env.NEXT_PUBLIC_AFFILIATE_LINK || '#';
-  const needsTurnstile = Boolean(turnstileSiteKey) && text.length > 500;
+  const needsTurnstile = Boolean(turnstileSiteKey) && text.length > 300;
   const needsToken = needsTurnstile && !turnstileToken;
+  const showReminder = text.length > 600;
 
   const handleVerify = (token: string) => {
     setTurnstileToken(token);
@@ -144,9 +145,15 @@ export default function BypassAICheck() {
             className="w-full min-h-[60vh] p-6 bg-transparent border border-gray-200 dark:border-gray-800 rounded-2xl resize-none focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all duration-300 text-lg shadow-sm"
           />
           <div className="absolute bottom-4 right-6 text-sm text-gray-400 font-mono">
-            {text.length}/500
+            {text.length}/600
           </div>
         </div>
+
+        {showReminder && (
+          <div className="text-amber-500 text-sm text-center">
+            ⚠️ Text exceeds 600 characters - verification required
+          </div>
+        )}
 
         {text.length > 300 && !turnstileToken && turnstileSiteKey && (
           <div className="flex justify-center">

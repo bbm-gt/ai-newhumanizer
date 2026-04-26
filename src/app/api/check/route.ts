@@ -47,9 +47,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (text.length > 500) {
+    if (text.length > 600) {
       return NextResponse.json(
-        { error: 'Text exceeds 500 character limit' },
+        { error: 'Text exceeds 600 character limit' },
         { status: 400 }
       );
     }
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
-    if (text.length > 500) {
+    if (text.length > 300) {
       if (!turnstileToken) {
         return NextResponse.json(
           { error: 'Turnstile verification required for long text' },

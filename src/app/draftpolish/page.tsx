@@ -174,10 +174,17 @@ export default function DraftPolish() {
 
         {/* Action Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Turnstile - shown when text > 500 chars */}
-          {text.length > 500 && !turnstileToken && turnstileSiteKey && (
+          {/* Turnstile - shown when text > 300 chars */}
+          {text.length > 300 && !turnstileToken && turnstileSiteKey && (
             <div className="flex justify-center">
               <Turnstile siteKey={turnstileSiteKey} onVerify={handleVerify} />
+            </div>
+          )}
+
+          {/* Reminder when text exceeds 600 chars */}
+          {text.length > 600 && (
+            <div className="text-amber-500 text-sm text-center">
+              ⚠️ Text exceeds 600 characters
             </div>
           )}
 
