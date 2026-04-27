@@ -67,10 +67,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 600 character limit
-    if (text.length > 600) {
+    // 500 word limit
+    const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+    if (wordCount > 500) {
       return NextResponse.json(
-        { error: 'Text exceeds 600 character limit' },
+        { error: 'Text exceeds 500 word limit' },
         { status: 400 }
       );
     }
@@ -92,8 +93,8 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
-    // Turnstile verification for text > 300 characters
-    if (text.length > 300) {
+    // Turnstile verification for text > 300 words
+    if (wordCount > 300) {
       if (!turnstileToken) {
         return NextResponse.json(
           { error: 'Turnstile verification required for long text' },

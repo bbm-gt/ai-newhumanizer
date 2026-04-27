@@ -40,9 +40,10 @@ export default function BypassAICheck() {
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
   const affiliateLink = process.env.NEXT_PUBLIC_AFFILIATE_LINK || '#';
-  const needsTurnstile = Boolean(turnstileSiteKey) && text.length > 300;
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const needsTurnstile = Boolean(turnstileSiteKey) && wordCount > 300;
   const needsToken = needsTurnstile && !turnstileToken;
-  const exceedsLimit = text.length > 600;
+  const exceedsLimit = wordCount > 500;
 
   const handleVerify = (token: string) => {
     setTurnstileToken(token);
@@ -233,17 +234,17 @@ export default function BypassAICheck() {
             className="w-full min-h-[50vh] md:min-h-[60vh] p-5 md:p-6 bg-transparent border border-gray-200 dark:border-gray-800 rounded-2xl resize-none focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all duration-300 text-base md:text-lg shadow-sm"
           />
           <div className="absolute bottom-4 right-6 text-sm text-gray-400 font-mono">
-            {text.length}/600
+            {wordCount}/500
           </div>
         </div>
 
         {exceedsLimit && (
           <div className="text-red-500 text-sm text-center">
-            ⚠️ Text exceeds 600 limit.
+            ⚠️ Text exceeds 500 word limit.
           </div>
         )}
 
-        {text.length > 300 && !turnstileToken && turnstileSiteKey && (
+        {wordCount > 300 && !turnstileToken && turnstileSiteKey && (
           <div className="flex justify-center">
             <Turnstile siteKey={turnstileSiteKey} onVerify={handleVerify} />
           </div>

@@ -21,15 +21,16 @@ export default function DraftPolish() {
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
   const affiliateLink = process.env.NEXT_PUBLIC_AFFILIATE_LINK || '#';
-  const exceedsLimit = text.length > 600;
-  const needsTurnstile = text.length > 300;
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const exceedsLimit = wordCount > 500;
+  const needsTurnstile = wordCount > 300;
 
   // Reset token when text drops below threshold
   useEffect(() => {
-    if (text.length <= 300 && turnstileToken) {
+    if (wordCount <= 300 && turnstileToken) {
       setTurnstileToken('');
     }
-  }, [text.length, turnstileToken]);
+  }, [wordCount, turnstileToken]);
 
   // Track text changes - only reset tab on actual content addition (not cursor movements)
   const prevTextLenRef = useRef(0);
@@ -281,7 +282,7 @@ export default function DraftPolish() {
 
         {/* Desktop: char counter inline */}
         <div className="hidden md:block text-right text-sm text-gray-400 font-mono">
-          {text.length}/600
+          {wordCount}/500
         </div>
       </div>
 
@@ -290,7 +291,7 @@ export default function DraftPolish() {
         <div className="max-w-6xl mx-auto p-4 md:p-0 flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Mobile: Turnstile inline in action bar */}
           <div className="w-full md:w-auto flex items-center gap-4">
-            {text.length > 300 && !turnstileToken && turnstileSiteKey && (
+            {wordCount > 300 && !turnstileToken && turnstileSiteKey && (
               <div className="flex-1 md:flex-none">
                 <Turnstile siteKey={turnstileSiteKey} onVerify={handleVerify} />
               </div>
@@ -298,14 +299,14 @@ export default function DraftPolish() {
 
             {/* Mobile: char counter */}
             <div className="md:hidden text-sm text-gray-400 font-mono">
-              {text.length}/600
+              {wordCount}/500
             </div>
           </div>
 
           {/* Exceeds limit warning */}
           {exceedsLimit && (
             <div className="text-red-500 text-sm text-center md:hidden">
-              ⚠️ Exceeds 600 limit
+              ⚠️ Exceeds 500 word limit
             </div>
           )}
 
