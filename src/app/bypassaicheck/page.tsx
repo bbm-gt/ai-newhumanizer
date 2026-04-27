@@ -30,6 +30,7 @@ interface CheckResult {
 export default function BypassAICheck() {
   const [text, setText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showComplete, setShowComplete] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [result, setResult] = useState<CheckResult | null>(null);
   const [error, setError] = useState('');
@@ -79,7 +80,12 @@ export default function BypassAICheck() {
       }
 
       setResult(data);
-      setShowResults(true);
+      setIsLoading(false);
+      setShowComplete(true);
+      setTimeout(() => {
+        setShowComplete(false);
+        setShowResults(true);
+      }, 600);
 
       if (data.totalAiProbability > 50) {
         setShowBanner(true);
@@ -110,8 +116,8 @@ export default function BypassAICheck() {
 
   return (
     <main className="min-h-screen bg-white dark:bg-black text-black dark:text-white pb-safe flex flex-col items-center justify-center p-4 md:p-12 gap-8 transition-all duration-300">
-      {/* Loading Overlay */}
-      {isLoading && (
+      {/* Loading Overlay - Progress Ring */}
+      {(isLoading || showComplete) && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-sm">
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl">
             <div className="text-center space-y-4">
@@ -124,26 +130,39 @@ export default function BypassAICheck() {
                     strokeWidth="6"
                     className="fill-none stroke-gray-200 dark:stroke-gray-700"
                   />
-                  {/* Progress ring - animates from 0 to full */}
+                  {/* Progress ring */}
                   <circle
                     cx="40" cy="40" r="36"
                     strokeWidth="6"
                     strokeLinecap="round"
-                    className="fill-none stroke-gray-900 dark:stroke-white transition-all duration-300"
-                    strokeDasharray={226}
-                    strokeDashoffset={226}
-                    style={{
-                      animation: 'progress-fill 3s ease-out forwards',
-                    }}
+                    className="fill-none stroke-gray-900 dark:stroke-white transition-all duration-500"
+                    strokeDasharray="226"
+                    strokeDashoffset={showComplete ? 0 : 113}
                   />
                 </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-4 h-4 rounded-full bg-gray-900 dark:bg-white" />
-                </div>
+                {/* Spinning indicator */}
+                {isLoading && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ animation: 'spin 1s linear infinite' }}
+                  >
+                    <div className="w-3 h-3 rounded-full bg-gray-900 dark:bg-white" />
+                  </div>
+                )}
+                {/* Checkmark when complete */}
+                {showComplete && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-4 h-4 rounded-full bg-gray-900 dark:bg-white" />
+                  </div>
+                )}
               </div>
               <div>
-                <p className="text-gray-900 dark:text-white font-semibold">Analyzing flow...</p>
-                <p className="text-xs text-gray-500 mt-1">Running diagnostic patterns</p>
+                <p className="text-gray-900 dark:text-white font-semibold">
+                  {showComplete ? 'Analysis complete!' : 'Analyzing flow...'}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {showComplete ? 'Preparing results' : 'Running diagnostic patterns'}
+                </p>
               </div>
             </div>
           </div>
@@ -379,11 +398,11 @@ function DimensionLabel({ label, value }: { label: string; value: number }) {
   );
 }
 
-{/* Progress ring and shimmer animations */}
+{/* Loading animations */}
 <style>{`
-  @keyframes progress-fill {
-    0% { stroke-dashoffset: 226; }
-    100% { stroke-dashoffset: 0; }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
   @keyframes shimmer {
     0% { transform: translateX(-100%); }

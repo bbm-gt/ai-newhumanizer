@@ -180,45 +180,6 @@ export default function DraftPolish() {
         </div>
       )}
 
-      {/* Loading Overlay */}
-      {isPolishing && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl">
-            <div className="text-center space-y-4">
-              {/* Progress Ring */}
-              <div className="relative w-20 h-20 mx-auto">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
-                  {/* Background ring */}
-                  <circle
-                    cx="40" cy="40" r="36"
-                    strokeWidth="6"
-                    className="fill-none stroke-gray-200 dark:stroke-gray-700"
-                  />
-                  {/* Progress ring */}
-                  <circle
-                    cx="40" cy="40" r="36"
-                    strokeWidth="6"
-                    strokeLinecap="round"
-                    className="fill-none stroke-gray-900 dark:stroke-white transition-all duration-300"
-                    strokeDasharray={226}
-                    strokeDashoffset={226}
-                    style={{
-                      animation: 'progress-fill 3s ease-out forwards',
-                    }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-4 h-4 rounded-full bg-gray-900 dark:bg-white" />
-                </div>
-              </div>
-              <div>
-                <p className="text-gray-900 dark:text-white font-semibold">Reconstructing flow...</p>
-                <p className="text-xs text-gray-500 mt-1">Applying organic humanization patterns</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="w-full max-w-6xl mx-auto flex flex-col gap-6 flex-1 pt-4 md:pt-0 pb-32 md:pb-24">
         {/* Header */}
