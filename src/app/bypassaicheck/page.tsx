@@ -115,10 +115,31 @@ export default function BypassAICheck() {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-sm">
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl">
             <div className="text-center space-y-4">
-              <div className="relative w-16 h-16 mx-auto">
-                <div className="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full" />
-                <div className="absolute inset-0 border-4 border-t-gray-900 dark:border-t-white rounded-full animate-spin" />
-                <div className="absolute inset-2 border-4 border-t-gray-300 dark:border-t-gray-600 rounded-full animate-spin-reverse" />
+              {/* Progress Ring */}
+              <div className="relative w-20 h-20 mx-auto">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
+                  {/* Background ring */}
+                  <circle
+                    cx="40" cy="40" r="36"
+                    strokeWidth="6"
+                    className="fill-none stroke-gray-200 dark:stroke-gray-700"
+                  />
+                  {/* Progress ring - animates from 0 to full */}
+                  <circle
+                    cx="40" cy="40" r="36"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    className="fill-none stroke-gray-900 dark:stroke-white transition-all duration-300"
+                    strokeDasharray={226}
+                    strokeDashoffset={226}
+                    style={{
+                      animation: 'progress-fill 3s ease-out forwards',
+                    }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-4 h-4 rounded-full bg-gray-900 dark:bg-white" />
+                </div>
               </div>
               <div>
                 <p className="text-gray-900 dark:text-white font-semibold">Analyzing flow...</p>
@@ -358,18 +379,15 @@ function DimensionLabel({ label, value }: { label: string; value: number }) {
   );
 }
 
-{/* Spin-reverse and shimmer animations */}
+{/* Progress ring and shimmer animations */}
 <style>{`
-  @keyframes spin-reverse {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(-360deg); }
+  @keyframes progress-fill {
+    0% { stroke-dashoffset: 226; }
+    100% { stroke-dashoffset: 0; }
   }
   @keyframes shimmer {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
-  }
-  .animate-spin-reverse {
-    animation: spin-reverse 1s linear infinite;
   }
   .shimmer-line {
     position: absolute;

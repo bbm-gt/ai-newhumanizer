@@ -13,7 +13,9 @@
       "Bash(npm run *)",
       "Bash(curl *)",
       "WebFetch(domain:detect.ilang.cn)",
-      "Bash(git restore *)"
+      "Bash(git restore *)",
+      "WebFetch(domain:challenges.cloudflare.com)",
+      "Bash(npx tsc *)"
     ]
   }
 }
