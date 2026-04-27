@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Turnstile from '@/components/Turnstile';
 import TextHighlighter, { Sentence } from '@/components/TextHighlighter';
@@ -50,14 +50,37 @@ export default function BypassAICheck() {
     setTurnstileToken(token);
   };
 
+  // Ring closes after 2s, then show results after 500ms more
+  const ringCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (isLoading) {
+      ringCloseTimerRef.current = setTimeout(() => {
+        setShowComplete(true);
+        // Show results 500ms after ring closes
+        setTimeout(() => {
+          setIsLoading(false);
+          setShowComplete(false);
+          setShowResults(true);
+        }, 500);
+      }, 2000);
+    }
+    return () => {
+      if (ringCloseTimerRef.current) {
+        clearTimeout(ringCloseTimerRef.current);
+      }
+    };
+  }, [isLoading]);
+
   const handleCheck = async () => {
     if (!text.trim()) return;
 
     setIsLoading(true);
+    setShowComplete(false);
     setError('');
     setShowResults(false);
     setShowModal(false);
     setShowBanner(false);
+    setResult(null);
 
     try {
       const res = await fetch('/api/check', {
@@ -70,6 +93,7 @@ export default function BypassAICheck() {
       if (res.status === 429) {
         setShowLimitModal(true);
         setIsLoading(false);
+        setShowComplete(false);
         return;
       }
 
@@ -80,12 +104,6 @@ export default function BypassAICheck() {
       }
 
       setResult(data);
-      setIsLoading(false);
-      setShowComplete(true);
-      setTimeout(() => {
-        setShowComplete(false);
-        setShowResults(true);
-      }, 600);
 
       if (data.totalAiProbability > 50) {
         setShowBanner(true);
@@ -94,7 +112,7 @@ export default function BypassAICheck() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
-      setIsLoading(false);
+      // Don't set isLoading=false here - let the timer handle it
     }
   };
 
