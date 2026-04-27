@@ -4,34 +4,31 @@ export const runtime = 'edge';
 
 import { checkAndIncrementUsage, getRateLimitHeaders } from '@/lib/rateLimit';
 
-// Prompt-as-a-Judge System Prompt - 一字不落
-const DETECTION_SYSTEM_PROMPT = `你现在是全球顶级的 AI 文本检测引擎（类似 Turnitin 高级版）。你的任务是深度扫描用户提供的文本，敏锐捕捉大语言模型（如 DeepSeek/GPT-4）特有的概率平滑指纹和逻辑脚手架，并输出结构化的 JSON 检测报告。
+// DETECTION_SYSTEM_PROMPT - Pure LLM裁判法（废弃正则）
+const DETECTION_SYSTEM_PROMPT = `You are an elite AI text detection engine (similar to Originality.ai). Deeply scan the provided text to capture probabilistic smoothing and logical scaffolding typical of LLMs (like DeepSeek/GPT-4).
 
-【评分核心维度指南】
-1. Lexical (词汇): 寻找是否泛滥使用 'utilize', 'delve', '综上所述', '首先/其次' 等机器高频词。
-2. Structural (结构): 寻找机器特有的 '过度完整性' 和模板化的过渡句式。
-3. Rhythm (节奏): 检查句子长度方差。AI 文本通常长度均匀、节拍机械；人类文本会长短句剧烈交替。
-4. Tone (语气): 检查是否过度客观、缺乏情绪波动或主观偏见。
-5. Punctuation (标点): 检查标点密度是否异常规律。
-6. Logic (逻辑): 检查是否过度使用显式的因果/转折连接词。
+Evaluate on 6 dimensions (0-100, higher = more likely AI):
+1. Lexical: Overuse of AI words (utilize, delve, tapestry, etc.).
+2. Structural: Over-completeness, predictable transitions.
+3. Rhythm: Lack of variance in sentence length.
+4. Tone: Overly objective, lacking human cognitive tangents.
+5. Punctuation: Unnatural uniformity.
+6. Logic: Excessive explicit conjunctions (furthermore, thus).
 
-【输出要求】
-仅输出合法的 JSON 格式，不要包含任何 Markdown 标记，直接返回 JSON 字符串。格式如下：
+Output ONLY a valid JSON object without any Markdown formatting. Format:
 {
   "totalAiProbability": 85,
-  "dimensions": {
-    "lexical": 90, "structural": 85, "rhythm": 80, "tone": 70, "punctuation": 60, "logic": 75
-  },
+  "dimensions": {"lexical": 90, "structural": 85, "rhythm": 80, "tone": 70, "punctuation": 60, "logic": 75},
   "sentences": [
     {
-      "text": "原文中的完整句子1...",
+      "text": "The exact original sentence here...",
       "aiProbability": 90,
-      "reason": "过度使用逻辑脚手架词汇，句式极其平滑预测性强。"
+      "reason": "Highly predictable transition and overly robotic lexical choices."
     }
   ]
 }`;
 
-// Fallback response when API fails
+// Fallback response with error indicator - never crashes frontend
 const FALLBACK_RESPONSE = {
   totalAiProbability: 50,
   dimensions: {
@@ -43,7 +40,18 @@ const FALLBACK_RESPONSE = {
     logic: 50,
   },
   sentences: [],
+  _fallback: true,
+  _error: 'Detection unavailable. Please try again.',
 };
+
+// DeepSeek API response types - module level
+interface DeepSeekChoice {
+  message: { content: string };
+}
+
+interface DeepSeekResponse {
+  choices: DeepSeekChoice[];
+}
 
 interface TurnstileResponse {
   success: boolean;
@@ -83,8 +91,9 @@ async function callDetectionModel(text: string): Promise<typeof FALLBACK_RESPONS
     return FALLBACK_RESPONSE;
   }
 
+  let response: Response;
   try {
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
+    response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -100,27 +109,50 @@ async function callDetectionModel(text: string): Promise<typeof FALLBACK_RESPONS
         max_tokens: 2000,
       }),
     });
-
-    if (!response.ok) {
-      console.error('DeepSeek API error:', response.status);
-      return FALLBACK_RESPONSE;
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      console.error('No content in DeepSeek response');
-      return FALLBACK_RESPONSE;
-    }
-
-    // Parse JSON response
-    const parsed = JSON.parse(content);
-    return parsed;
-  } catch (error) {
-    console.error('Detection API error:', error);
-    return FALLBACK_RESPONSE;
+  } catch (networkError) {
+    console.error('Network error calling DeepSeek API:', networkError);
+    return { ...FALLBACK_RESPONSE, _error: 'Network error. Please check your connection.' };
   }
+
+  if (!response.ok) {
+    console.error('DeepSeek API error:', response.status);
+    return { ...FALLBACK_RESPONSE, _error: `API error: ${response.status}` };
+  }
+
+  let data: DeepSeekResponse;
+  try {
+    data = await response.json() as DeepSeekResponse;
+  } catch {
+    console.error('Failed to parse JSON response');
+    return { ...FALLBACK_RESPONSE, _error: 'Invalid API response format.' };
+  }
+
+  const content = data?.choices?.[0]?.message?.content;
+
+  if (!content) {
+    console.error('No content in DeepSeek response');
+    return { ...FALLBACK_RESPONSE, _error: 'Empty response from API.' };
+  }
+
+  // Safely parse JSON with validation
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    console.error('DeepSeek returned non-JSON content:', content.slice(0, 100));
+    return { ...FALLBACK_RESPONSE, _error: 'Malformed JSON from API.' };
+  }
+
+  // Validate required fields exist
+  const requiredFields = ['totalAiProbability', 'dimensions', 'sentences'];
+  for (const field of requiredFields) {
+    if (!(field in parsed)) {
+      console.error(`Missing required field: ${field}`);
+      return { ...FALLBACK_RESPONSE, _error: `Incomplete response: missing ${field}` };
+    }
+  }
+
+  return parsed as typeof FALLBACK_RESPONSE;
 }
 
 export async function POST(request: NextRequest) {
