@@ -2,7 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
+import { getRequestContext } from '@cloudflare/next-on-pages';
 import { checkAndIncrementUsage, getRateLimitHeaders } from '@/lib/rateLimit';
+
+export interface Env {
+  AIHUMAN_KV?: {
+    get: (key: string, type?: 'json') => Promise<unknown>;
+    put: (key: string, value: string, options?: { expirationTtl: number }) => Promise<void>;
+  };
+}
 
 // DETECTION_SYSTEM_PROMPT - Pure LLM裁判法（废弃正则）
 const DETECTION_SYSTEM_PROMPT = `You are an elite AI text detection engine (similar to Originality.ai). Deeply scan the provided text to capture probabilistic smoothing and logical scaffolding typical of LLMs (like DeepSeek/GPT-4).
@@ -175,12 +183,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { result: rateLimitResult, setCookie } = await checkAndIncrementUsage(request);
+    // Rate limiting - extract KV binding from Cloudflare context
+    let aiHumanKV: Env['AIHUMAN_KV'] | undefined;
+    try {
+      aiHumanKV = getRequestContext().env.AIHUMAN_KV;
+    } catch (e) {
+      console.warn('KV context not found, falling back to memory');
+    }
+
+    const { result: rateLimitResult, setCookie } = await checkAndIncrementUsage(request, { AIHUMAN_KV: aiHumanKV });
 
     if (!rateLimitResult.allowed) {
       const response = NextResponse.json(
         { error: 'Daily limit reached. Please try again tomorrow.', remaining: 0 },
-        { status: 429 }
+        { status: 429, headers: { 'X-RateLimit-Remaining': '0' } }
       );
       const headers = getRateLimitHeaders(setCookie);
       headers.forEach((value, key) => {

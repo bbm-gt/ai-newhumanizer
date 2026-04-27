@@ -2,7 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
+import { getRequestContext } from '@cloudflare/next-on-pages';
 import { checkAndIncrementUsage, getRateLimitHeaders } from '@/lib/rateLimit';
+
+export interface Env {
+  AIHUMAN_KV?: {
+    get: (key: string, type?: 'json') => Promise<unknown>;
+    put: (key: string, value: string, options?: { expirationTtl: number }) => Promise<void>;
+  };
+}
 
 // RSIP System Prompt - 全英文高阶指令，消除翻译腔
 const POLISH_SYSTEM_PROMPT = `You are a world-class Computational Linguist. Your ONLY objective is to heavily humanize the user's text, completely obliterating any AI-generated probabilistic signatures.
@@ -76,21 +84,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Rate limiting
-    const { result: rateLimitResult, setCookie } = await checkAndIncrementUsage(request);
+    // Rate limiting - extract KV binding from Cloudflare context
+    let aiHumanKV: Env['AIHUMAN_KV'] | undefined;
+    try {
+      aiHumanKV = getRequestContext().env.AIHUMAN_KV;
+    } catch (e) {
+      console.warn('KV context not found, falling back to memory');
+    }
+
+    const { result: rateLimitResult, setCookie } = await checkAndIncrementUsage(request, { AIHUMAN_KV: aiHumanKV });
 
     if (!rateLimitResult.allowed) {
-      const response = NextResponse.json(
+      return NextResponse.json(
         { error: 'Daily limit reached. Please try again tomorrow.', remaining: 0 },
-        { status: 429 }
+        { status: 429, headers: { 'X-RateLimit-Remaining': '0' } }
       );
-      const headers = getRateLimitHeaders(setCookie);
-      headers.forEach((value, key) => {
-        if (key === 'Set-Cookie') {
-          response.headers.set(key, value);
-        }
-      });
-      return response;
     }
 
     // Turnstile verification for text > 300 words
