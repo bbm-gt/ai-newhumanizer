@@ -5,13 +5,6 @@ export const runtime = 'edge';
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { checkAndIncrementUsage, getRateLimitHeaders } from '@/lib/rateLimit';
 
-export interface Env {
-  AIHUMAN_KV?: {
-    get: (key: string, type?: 'json') => Promise<unknown>;
-    put: (key: string, value: string, options?: { expirationTtl: number }) => Promise<void>;
-  };
-}
-
 // DETECTION_SYSTEM_PROMPT - Pure LLM裁判法（废弃正则）
 const DETECTION_SYSTEM_PROMPT = `You are an elite AI text detection engine (similar to Originality.ai). Deeply scan the provided text to capture probabilistic smoothing and logical scaffolding typical of LLMs (like DeepSeek/GPT-4).
 
@@ -184,9 +177,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting - extract KV binding from Cloudflare context
-    let aiHumanKV: Env['AIHUMAN_KV'] | undefined;
+    let aiHumanKV: { get: (key: string, type?: 'json') => Promise<unknown>; put: (key: string, value: string, options?: { expirationTtl: number }) => Promise<void> } | undefined;
     try {
-      aiHumanKV = getRequestContext().env.AIHUMAN_KV;
+      const kv = getRequestContext().env as Record<string, unknown>;
+      if (kv['AIHUMAN_KV']) {
+        aiHumanKV = kv['AIHUMAN_KV'] as typeof aiHumanKV;
+      }
     } catch (e) {
       console.warn('KV context not found, falling back to memory');
     }

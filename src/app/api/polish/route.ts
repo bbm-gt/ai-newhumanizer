@@ -85,9 +85,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting - extract KV binding from Cloudflare context
-    let aiHumanKV: Env['AIHUMAN_KV'] | undefined;
+    let aiHumanKV: { get: (key: string, type?: 'json') => Promise<unknown>; put: (key: string, value: string, options?: { expirationTtl: number }) => Promise<void> } | undefined;
     try {
-      aiHumanKV = getRequestContext().env.AIHUMAN_KV;
+      const kv = getRequestContext().env as Record<string, unknown>;
+      if (kv['AIHUMAN_KV']) {
+        aiHumanKV = kv['AIHUMAN_KV'] as typeof aiHumanKV;
+      }
     } catch (e) {
       console.warn('KV context not found, falling back to memory');
     }
