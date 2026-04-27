@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       console.warn('KV context not found, falling back to memory');
     }
 
-    const { result: rateLimitResult, setCookie } = await checkAndIncrementUsage(request, { AIHUMAN_KV: aiHumanKV });
+    const { result: rateLimitResult } = await checkAndIncrementUsage(request, { AIHUMAN_KV: aiHumanKV });
 
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
