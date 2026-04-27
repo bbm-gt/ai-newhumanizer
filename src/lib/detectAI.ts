@@ -3,7 +3,6 @@ import {
   CHINESE_AI_PATTERNS,
   AI_TEMPLATES,
   AI_STRUCTURAL_PATTERNS,
-  hasChinesePattern,
 } from './aiPhrases';
 
 export interface DetectionResult {
@@ -16,6 +15,19 @@ export interface DetectionResult {
   punctuation: number;
   flaggedPhrases: string[];
   flaggedPatterns: string[];
+}
+
+export interface SentenceAnalysis {
+  text: string;
+  index: number;
+  start: number;
+  end: number;
+  aiProbability: number;
+  lexical: number;
+  structural: number;
+  rhythm: number;
+  tone: number;
+  reasons: string[];
 }
 
 function detectLexical(text: string): { score: number; phrases: string[] } {
@@ -211,4 +223,106 @@ export function detectAI(text: string): DetectionResult {
     flaggedPhrases: allFlagged,
     flaggedPatterns: structural.patterns.slice(0, 3),
   };
+}
+
+// Detect AI with per-sentence analysis for white-box visualization
+export function detectAIWithSentences(text: string): {
+  overall: DetectionResult;
+  sentences: SentenceAnalysis[];
+} {
+  // Split into sentences (English and Chinese)
+  const sentenceRegex = /[^.!?。！？]+[.!?。！？]+/g;
+  const matches = text.match(sentenceRegex) || [];
+  const sentences: SentenceAnalysis[] = [];
+
+  let charIndex = 0;
+  for (let i = 0; i < matches.length; i++) {
+    const sentenceText = matches[i];
+    const start = text.indexOf(sentenceText, charIndex);
+    const end = start + sentenceText.length;
+    charIndex = end;
+
+    const reasons: string[] = [];
+    let lexicalScore = 0;
+    let structuralScore = 0;
+    let rhythmScore = 50;
+    let toneScore = 50;
+
+    // Check lexical: AI high-frequency words
+    const lowerSentence = sentenceText.toLowerCase();
+    let aiWordCount = 0;
+    for (const word of ENGLISH_AI_WORDS) {
+      const regex = new RegExp(`\\b${word}\\b`, 'gi');
+      if (regex.test(lowerSentence)) {
+        aiWordCount++;
+      }
+    }
+    for (const pattern of CHINESE_AI_PATTERNS) {
+      if (pattern.includes('...')) {
+        const parts = pattern.split('...');
+        if (parts.length === 2 && lowerSentence.includes(parts[0]) && lowerSentence.includes(parts[1])) {
+          aiWordCount++;
+        }
+      } else if (lowerSentence.includes(pattern)) {
+        aiWordCount++;
+      }
+    }
+    lexicalScore = Math.min(100, aiWordCount * 25);
+
+    // Check structural: AI templates
+    for (const pattern of AI_TEMPLATES) {
+      if (pattern.test(sentenceText)) {
+        structuralScore = Math.min(100, structuralScore + 30);
+        reasons.push('模板化句式');
+      }
+    }
+    for (const pattern of AI_STRUCTURAL_PATTERNS) {
+      if (pattern.test(sentenceText)) {
+        structuralScore = Math.min(100, structuralScore + 25);
+        reasons.push('机械重复结构');
+      }
+    }
+
+    // Check rhythm: sentence length uniformity
+    const wordCount = sentenceText.trim().split(/\s+/).filter(n => n.length > 0).length;
+    if (wordCount > 20) {
+      rhythmScore = 70;
+      reasons.push('长句堆叠');
+    } else if (wordCount < 5 && wordCount > 0) {
+      rhythmScore = 20;
+    }
+
+    // Check tone: uniformity indicators
+    const hasUniformStructure = /\b(which|that|because|therefore|however)\b/gi.test(sentenceText);
+    if (hasUniformStructure) {
+      toneScore = Math.min(100, toneScore + 15);
+      reasons.push('过度使用连接词');
+    }
+
+    // AI probability for this sentence
+    const sentenceAI = Math.round(
+      lexicalScore * 0.35 +
+      structuralScore * 0.30 +
+      rhythmScore * 0.20 +
+      toneScore * 0.15
+    );
+
+    sentences.push({
+      text: sentenceText,
+      index: i,
+      start,
+      end,
+      aiProbability: sentenceAI,
+      lexical: Math.round(lexicalScore),
+      structural: Math.round(structuralScore),
+      rhythm: Math.round(rhythmScore),
+      tone: Math.round(toneScore),
+      reasons: reasons.length > 0 ? reasons : ['无明显AI特征'],
+    });
+  }
+
+  // Calculate overall
+  const overall = detectAI(text);
+
+  return { overall, sentences };
 }

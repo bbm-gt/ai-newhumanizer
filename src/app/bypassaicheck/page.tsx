@@ -3,20 +3,26 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Turnstile from '@/components/Turnstile';
+import TextHighlighter, { Sentence } from '@/components/TextHighlighter';
 
 const AIDetectionRadarChart = dynamic(
   () => import('@/components/AIDetectionRadarChart'),
   { ssr: false, loading: () => <div className="h-[350px] flex items-center justify-center text-gray-400">Loading chart...</div> }
 );
 
-interface CheckResult {
-  aiProbability: number;
+interface Dimensions {
   lexical: number;
   structural: number;
-  tone: number;
-  logic: number;
   rhythm: number;
+  tone: number;
   punctuation: number;
+  logic: number;
+}
+
+interface CheckResult {
+  totalAiProbability: number;
+  dimensions: Dimensions;
+  sentences: Sentence[];
 }
 
 export default function BypassAICheck() {
@@ -64,7 +70,7 @@ export default function BypassAICheck() {
       setResult(data);
       setShowResults(true);
 
-      if (data.aiProbability > 50) {
+      if (data.totalAiProbability > 50) {
         setShowBanner(true);
         setShowModal(true);
       }
@@ -99,7 +105,7 @@ export default function BypassAICheck() {
         </div>
       )}
 
-      {showModal && result && result.aiProbability > 50 && (
+      {showModal && result && result.totalAiProbability > 50 && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}
@@ -109,16 +115,16 @@ export default function BypassAICheck() {
               <div className="text-5xl">⚠️</div>
               <h2 className="text-2xl font-bold text-red-600 dark:text-red-400">High AI Probability Detected</h2>
               <p className="text-gray-600 dark:text-gray-300">
-                Your text has a <span className="font-bold text-red-600">{result.aiProbability}%</span> AI probability score.
+                Your text has a <span className="font-bold text-red-600">{result.totalAiProbability}%</span> AI probability score.
               </p>
               <p className="text-sm text-gray-500">
-                Use Humanizer Pro to humanize your content and bypass strict AI detectors like Turnitin.
+                Use Humanizer Pro to humanize your content and bypass strict AI detectors.
               </p>
               <button
                 onClick={openAffiliateLink}
                 className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-full font-bold text-lg hover:opacity-90 transition-opacity"
               >
-                Try Humanizer Pro - 100% Bypass
+                Try Humanizer Pro
               </button>
               <button
                 onClick={() => setShowModal(false)}
@@ -178,43 +184,51 @@ export default function BypassAICheck() {
         </button>
 
         {showResults && result && (
-          <div className="overflow-hidden transition-all duration-500 ease-in-out max-h-[1000px] opacity-100 mt-8">
+          <div className="overflow-hidden transition-all duration-500 ease-in-out max-h-[2000px] opacity-100 mt-8 space-y-8">
+            {/* Main Score Card */}
             <div className="p-8 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-sm flex flex-col gap-8 bg-white/50 dark:bg-black/50 backdrop-blur-sm">
               <div className="flex flex-col items-center justify-center gap-4">
                 <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">AI Probability</h3>
                 <div className="relative w-48 h-24 overflow-hidden flex items-end justify-center">
                   <div className="absolute top-0 left-0 w-48 h-48 rounded-full border-[16px] border-gray-100 dark:border-gray-900 border-b-transparent border-r-transparent rotate-45 transition-all duration-1000" />
                   <div
-                    className={`absolute top-0 left-0 w-48 h-48 rounded-full border-[16px] ${getProbabilityColor(result.aiProbability).replace('text-', 'border-')} border-b-transparent border-r-transparent -rotate-45 transition-all duration-1000`}
-                    style={{ transform: `rotate(${-135 + (result.aiProbability * 2.7)}deg)` }}
+                    className={`absolute top-0 left-0 w-48 h-48 rounded-full border-[16px] ${getProbabilityColor(result.totalAiProbability).replace('text-', 'border-')} border-b-transparent border-r-transparent -rotate-45 transition-all duration-1000`}
+                    style={{ transform: `rotate(${-135 + (result.totalAiProbability * 2.7)}deg)` }}
                   />
-                  <span className={`text-4xl font-bold mb-2 ${getProbabilityColor(result.aiProbability)}`}>
-                    {result.aiProbability}%
+                  <span className={`text-4xl font-bold mb-2 ${getProbabilityColor(result.totalAiProbability)}`}>
+                    {result.totalAiProbability}%
                   </span>
                 </div>
-                <span className={`text-sm font-medium ${getProbabilityColor(result.aiProbability)}`}>
-                  {getProbabilityLabel(result.aiProbability)}
+                <span className={`text-sm font-medium ${getProbabilityColor(result.totalAiProbability)}`}>
+                  {getProbabilityLabel(result.totalAiProbability)}
                 </span>
               </div>
 
               <AIDetectionRadarChart
-                lexical={result.lexical}
-                structural={result.structural}
-                tone={result.tone}
-                logic={result.logic}
-                rhythm={result.rhythm}
-                punctuation={result.punctuation}
+                lexical={result.dimensions.lexical}
+                structural={result.dimensions.structural}
+                tone={result.dimensions.tone}
+                logic={result.dimensions.logic}
+                rhythm={result.dimensions.rhythm}
+                punctuation={result.dimensions.punctuation}
               />
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
-                <DimensionLabel label="Lexical" value={result.lexical} />
-                <DimensionLabel label="Structural" value={result.structural} />
-                <DimensionLabel label="Tone" value={result.tone} />
-                <DimensionLabel label="Logic" value={result.logic} />
-                <DimensionLabel label="Rhythm" value={result.rhythm} />
-                <DimensionLabel label="Punctuation" value={result.punctuation} />
+                <DimensionLabel label="Lexical" value={result.dimensions.lexical} />
+                <DimensionLabel label="Structural" value={result.dimensions.structural} />
+                <DimensionLabel label="Tone" value={result.dimensions.tone} />
+                <DimensionLabel label="Logic" value={result.dimensions.logic} />
+                <DimensionLabel label="Rhythm" value={result.dimensions.rhythm} />
+                <DimensionLabel label="Punctuation" value={result.dimensions.punctuation} />
               </div>
             </div>
+
+            {/* White-box Highlighter - 深度检测白盒化展示 */}
+            {result.sentences && result.sentences.length > 0 && (
+              <div className="p-6 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-sm bg-white/50 dark:bg-black/50 backdrop-blur-sm">
+                <TextHighlighter text={text} sentences={result.sentences} />
+              </div>
+            )}
           </div>
         )}
       </div>
