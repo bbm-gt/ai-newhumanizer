@@ -21,7 +21,23 @@ export default function DraftPolish() {
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
   const affiliateLink = process.env.NEXT_PUBLIC_AFFILIATE_LINK || '#';
-  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const wordCount = text.trim() ? (() => {
+    const trimmed = text.trim();
+    const segments = trimmed.split(/\s+/);
+    let total = 0;
+    for (const segment of segments) {
+      if (!segment) continue;
+      const cjkChars = (segment.match(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g) || []).length;
+      const nonCjkPart = segment.replace(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g, '');
+      if (nonCjkPart.length > 0) {
+        const nonCjkWords = nonCjkPart.split(/\s+/).filter(Boolean).length;
+        total += cjkChars + nonCjkWords;
+      } else {
+        total += cjkChars > 0 ? cjkChars : 1;
+      }
+    }
+    return total;
+  })() : 0;
   const exceedsLimit = wordCount > 500;
   const needsTurnstile = wordCount > 300;
 

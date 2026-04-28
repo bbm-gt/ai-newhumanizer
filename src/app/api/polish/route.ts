@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'edge';
 
 import { getRequestContext } from '@cloudflare/next-on-pages';
-import { checkAndIncrementUsage, getRateLimitHeaders } from '@/lib/rateLimit';
+import { checkAndIncrementUsage, getRateLimitHeaders, countWords } from '@/lib/rateLimit';
 
 export interface Env {
   AIHUMAN_KV?: {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 500 word limit
-    const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const wordCount = countWords(text);
     if (wordCount > 500) {
       return NextResponse.json(
         { error: 'Text exceeds 500 word limit' },
@@ -95,13 +95,20 @@ export async function POST(request: NextRequest) {
       console.warn('KV context not found, falling back to memory');
     }
 
-    const { result: rateLimitResult } = await checkAndIncrementUsage(request, { AIHUMAN_KV: aiHumanKV });
+    const { result: rateLimitResult, setCookie } = await checkAndIncrementUsage(request, { AIHUMAN_KV: aiHumanKV });
 
     if (!rateLimitResult.allowed) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Daily limit reached. Please try again tomorrow.', remaining: 0 },
         { status: 429, headers: { 'X-RateLimit-Remaining': '0' } }
       );
+      const headers = getRateLimitHeaders(setCookie);
+      headers.forEach((value, key) => {
+        if (key === 'Set-Cookie') {
+          response.headers.set(key, value);
+        }
+      });
+      return response;
     }
 
     // Turnstile verification for text > 300 words

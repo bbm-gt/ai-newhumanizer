@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'edge';
 
 import { getRequestContext } from '@cloudflare/next-on-pages';
-import { checkAndIncrementUsage, getRateLimitHeaders } from '@/lib/rateLimit';
+import { checkAndIncrementUsage, getRateLimitHeaders, countWords } from '@/lib/rateLimit';
 
 // DETECTION_SYSTEM_PROMPT - Pure LLM裁判法（废弃正则）
 const DETECTION_SYSTEM_PROMPT = `You are an elite AI text detection engine (similar to Originality.ai). Deeply scan the provided text to capture probabilistic smoothing and logical scaffolding typical of LLMs (like DeepSeek/GPT-4).
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const wordCount = countWords(text);
     if (wordCount > 500) {
       return NextResponse.json(
         { error: 'Text exceeds 500 word limit' },

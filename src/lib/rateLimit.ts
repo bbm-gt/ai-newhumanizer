@@ -89,3 +89,22 @@ export function getRateLimitHeaders(setCookie?: string): Headers {
   }
   return headers;
 }
+
+export function countWords(text: string): number {
+  if (!text || !text.trim()) return 0;
+  const trimmed = text.trim();
+  const segments = trimmed.split(/\s+/);
+  let total = 0;
+  for (const segment of segments) {
+    if (!segment) continue;
+    const cjkChars = (segment.match(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g) || []).length;
+    const nonCjkPart = segment.replace(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g, '');
+    if (nonCjkPart.length > 0) {
+      const nonCjkWords = nonCjkPart.split(/\s+/).filter(Boolean).length;
+      total += cjkChars + nonCjkWords;
+    } else {
+      total += cjkChars > 0 ? cjkChars : 1;
+    }
+  }
+  return total;
+}
