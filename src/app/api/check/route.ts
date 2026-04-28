@@ -222,7 +222,20 @@ export async function POST(request: NextRequest) {
     // Call the detection model (Prompt-as-a-Judge)
     const result = await callDetectionModel(text);
 
-    return NextResponse.json(result);
+    const responseHeaders = new Headers({
+      'Content-Type': 'application/json'
+    });
+
+    if (setCookie) {
+      const rateLimitHeaders = getRateLimitHeaders(setCookie);
+      rateLimitHeaders.forEach((value, key) => {
+        if (key === 'Set-Cookie') {
+          responseHeaders.append(key, value);
+        }
+      });
+    }
+
+    return NextResponse.json(result, { headers: responseHeaders });
   } catch (error) {
     console.error('Check API error:', error);
     return NextResponse.json(FALLBACK_RESPONSE);

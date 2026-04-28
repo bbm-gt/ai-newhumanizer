@@ -211,12 +211,23 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    const responseHeaders = new Headers({
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive'
+    });
+
+    if (setCookie) {
+      const rateLimitHeaders = getRateLimitHeaders(setCookie);
+      rateLimitHeaders.forEach((value, key) => {
+        if (key === 'Set-Cookie') {
+          responseHeaders.append(key, value);
+        }
+      });
+    }
+
     return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive'
-      }
+      headers: responseHeaders
     });
   } catch (error) {
     console.error('Polish API error:', error);
